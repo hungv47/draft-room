@@ -1,0 +1,444 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Draft Room, second cut. One dark surface, hairline borders, restrained type. The pitch is the only
+ * saturated thing on screen; everything around it is quiet so the agent's work reads clearly.
+ * Two actors, two hues: coral for the human, cyan for the agent. Agent-only capability is always cyan.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --night: #07080c;
+  --night-2: #0c0e15;
+  --night-3: #12151e;
+  --night-4: #1a1e2a;
+  --line: rgb(255 255 255 / 0.07);
+  --line-2: rgb(255 255 255 / 0.12);
+  --line-3: rgb(255 255 255 / 0.22);
+
+  /* Ink */
+  --fog: #eef0f7;
+  --fog-2: #a9b0c4;
+  --fog-3: #6f7690;
+
+  /* Accents */
+  --pitch: #1d8a4b;
+  --pitch-glow: #6cf0a4;
+  --human: #ff4d85;
+  --human-2: #ff8fb3;
+  --agent: #3ce0ff;
+  --agent-2: #93ecff;
+  --gold: #e8c26a;
+  --silver: #cfd6e3;
+  --danger: #ff6b6b;
+
+  /* shadcn tokens, mapped onto the palette. Dark only; there is no light theme. */
+  --radius: 0.625rem;
+  --background: var(--night);
+  --foreground: var(--fog);
+  --card: var(--night-2);
+  --card-foreground: var(--fog);
+  --popover: #10131c;
+  --popover-foreground: var(--fog);
+  --primary: var(--fog);
+  --primary-foreground: var(--night);
+  --secondary: rgb(255 255 255 / 0.06);
+  --secondary-foreground: var(--fog);
+  --muted: rgb(255 255 255 / 0.05);
+  --muted-foreground: var(--fog-2);
+  --accent: rgb(255 255 255 / 0.07);
+  --accent-foreground: var(--fog);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line-2);
+  --ring: var(--agent);
+  --chart-1: var(--agent);
+  --chart-2: var(--human);
+  --chart-3: var(--gold);
+  --chart-4: var(--pitch-glow);
+  --chart-5: var(--silver);
+  --sidebar: var(--night-2);
+  --sidebar-foreground: var(--fog);
+  --sidebar-primary: var(--agent);
+  --sidebar-primary-foreground: var(--night);
+  --sidebar-accent: rgb(255 255 255 / 0.06);
+  --sidebar-accent-foreground: var(--fog);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--agent);
+}
+
+@theme inline {
+  --color-*: initial;
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+
+  --color-night: var(--night);
+  --color-night-2: var(--night-2);
+  --color-night-3: var(--night-3);
+  --color-night-4: var(--night-4);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-line-3: var(--line-3);
+  --color-fog: var(--fog);
+  --color-fog-2: var(--fog-2);
+  --color-fog-3: var(--fog-3);
+  --color-pitch: var(--pitch);
+  --color-pitch-glow: var(--pitch-glow);
+  --color-human: var(--human);
+  --color-human-2: var(--human-2);
+  --color-agent: var(--agent);
+  --color-agent-2: var(--agent-2);
+  --color-gold: var(--gold);
+  --color-silver: var(--silver);
+  --color-danger: var(--danger);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --font-display: var(--font-big-shoulders), "Big Shoulders", "Arial Narrow", sans-serif;
+  --font-sans: var(--font-sofia), "Sofia Sans", system-ui, sans-serif;
+  --font-board: var(--font-doto), "Doto", monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+
+  --shadow-panel: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 12px 30px -20px rgb(0 0 0 / 0.8);
+  --shadow-card: 0 22px 34px -16px rgb(0 0 0 / 0.85), 0 4px 10px -4px rgb(0 0 0 / 0.6);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.16) transparent;
+  }
+
+  html {
+    background: var(--night);
+    color: var(--fog);
+    caret-color: var(--fog);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100dvh;
+    font-size: 13.5px;
+    line-height: 1.45;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--agent) 40%, transparent);
+    color: var(--fog);
+  }
+
+  input,
+  button,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  input::placeholder {
+    color: var(--fog-3);
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.14);
+    border: 2px solid var(--night-2);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Tool names and JSON sit in Sofia, not a fourth family. */
+@utility code {
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Display voice: club-shirt lettering. Used for player surnames and the wordmark only. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  line-height: 0.92;
+}
+
+/* Scoreboard voice: dot-matrix numerals, tabular. */
+@utility board {
+  font-family: var(--font-board);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Small caps label voice for section eyebrows. */
+@utility eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fog-3);
+}
+
+/* Fade the rail lists at their edges the way a sidebar viewport does. */
+@utility scroll-fade {
+  mask-image: linear-gradient(#0000, #000 12px, #000 calc(100% - 16px), #0000);
+}
+.scroll-fade [data-slot="scroll-area-viewport"] {
+  mask-image: linear-gradient(#0000, #000 12px, #000 calc(100% - 16px), #0000);
+}
+
+/* A quiet panel. Flat, hairline border, no blur unless it floats over the pitch. */
+@utility panel {
+  background: var(--night-2);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-panel);
+}
+
+.draft-room-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 64rem) {
+  .draft-room-grid {
+    grid-template-columns: var(--pool-rail) minmax(0, 1fr) var(--agent-rail);
+    transition: grid-template-columns 280ms var(--ease-out-expo);
+  }
+}
+
+/* Overlay panel over the pitch: needs blur to stay legible over moving grass. */
+@utility glass {
+  background: rgb(8 9 14 / 0.72);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+
+/* Card materials. --club comes from the kit; tiers add a metal edge. Quieter than the first cut: no holo. */
+.card-face {
+  position: relative;
+  isolation: isolate;
+  border-radius: 14px;
+  background: linear-gradient(160deg, color-mix(in oklab, var(--club) 45%, #0c0e15) 0%, #0c0e15 46%, #0f121b 100%);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.card-face::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--edge, linear-gradient(160deg, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.05) 40%, rgb(255 255 255 / 0.14)));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 3;
+}
+.card-face::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgb(255 255 255 / var(--sheen, 0.1)) 48%,
+    rgb(255 255 255 / calc(var(--sheen, 0.1) * 1.5)) 50%,
+    rgb(255 255 255 / var(--sheen, 0.1)) 52%,
+    transparent 60%
+  );
+  transform: translateX(var(--sheen-x, -30%)) rotate(0.001deg);
+  mix-blend-mode: screen;
+  transition: transform 700ms var(--ease-out-expo);
+}
+.card-face[data-selected="true"] {
+  outline: 2px solid var(--fog);
+  outline-offset: 3px;
+}
+.card-face:focus-visible {
+  outline: 2px solid var(--agent);
+  outline-offset: 3px;
+}
+
+.card-face:hover::after,
+.card-face[data-lit="true"]::after {
+  transform: translateX(30%);
+}
+.tier-gold {
+  --edge: linear-gradient(160deg, #fff1bf 0%, #e8c26a 22%, #7d5b1d 48%, #e8c26a 72%, #fff1bf 100%);
+  --sheen: 0.2;
+}
+.tier-silver {
+  --edge: linear-gradient(160deg, #ffffff 0%, #cfd6e3 24%, #66708a 50%, #cfd6e3 76%, #ffffff 100%);
+  --sheen: 0.16;
+}
+
+/* Motion. One grammar: things arrive from above, settle with a short overshoot, leave upward. */
+@keyframes card-land {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -140px, 0) scale(0.92);
+    filter: blur(6px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes card-leave {
+  to {
+    opacity: 0;
+    transform: translate3d(0, -80px, 0) scale(0.9);
+    filter: blur(4px);
+  }
+}
+@keyframes ticker-in {
+  from {
+    clip-path: inset(0 100% 0 0 round 10px);
+    transform: translate3d(-16px, 0, 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 10px);
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes ticker-out {
+  to {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--agent) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+
+.anim-card-land {
+  animation: card-land 620ms var(--ease-out-back) both;
+}
+.anim-card-leave {
+  animation: card-leave 360ms var(--ease-in-out-quart) both;
+}
+.anim-ticker-in {
+  animation: ticker-in 520ms var(--ease-out-expo) both;
+}
+.anim-ticker-out {
+  animation: ticker-out 360ms var(--ease-in-out-quart) both;
+}
+.anim-rise-in {
+  animation: rise-in 380ms var(--ease-out-expo) both;
+}
+.anim-pulse-dot {
+  animation: pulse-dot 2.2s ease-out infinite;
+}
+
+html.dragging,
+html.dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draft-room-grid {
+    transition: none;
+  }
+
+  .anim-card-land,
+  .anim-card-leave,
+  .anim-ticker-in,
+  .anim-ticker-out,
+  .anim-rise-in,
+  .anim-pulse-dot {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .card-face::after {
+    transition: none;
+  }
+  * {
+    transition-duration: 0ms !important;
+  }
+}

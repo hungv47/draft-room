@@ -1,0 +1,19 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# testing
+/coverage
+
+# misc
+.DS_Store
+*.pem
+*.log
+*.tsbuildinfo
+next-env.d.ts
+
+# env files (this app needs none)
+.env*
