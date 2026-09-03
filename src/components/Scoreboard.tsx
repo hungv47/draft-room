@@ -74,9 +74,11 @@ export function Scoreboard() {
             </span>
           )}
         </div>
-        <div className="eyebrow mt-1">
+        <div className="eyebrow mt-1" aria-live="polite">
           <span className="sm:hidden">{formation} · </span>
           {filled}/{slots.length}
+          {filled === slots.length && <span> · Full</span>}
+          {left === 0 && <span> · No budget</span>}
         </div>
         <div className="mt-2 flex h-[3px] w-full overflow-hidden rounded-full bg-white/10" role="img" aria-label={`${formatPrice(byActor.human)} spent by you, ${formatPrice(byActor.agent)} spent by the agent`}>
           <span className="h-full bg-human transition-[width] duration-500 ease-out" style={{ width: `${humanPct}%` }} />

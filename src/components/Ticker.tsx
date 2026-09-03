@@ -36,7 +36,7 @@ export function Ticker() {
   return (
     <div key={shown.id} className={`max-w-[560px] md:mr-[96px] ${leaving ? "anim-ticker-out" : "anim-ticker-in"}`} aria-hidden>
       <div className="glass flex items-stretch overflow-hidden rounded-[10px]">
-        <div className={`flex w-[84px] shrink-0 items-center justify-center ${agent ? "bg-agent text-night" : "bg-human text-white"}`}>
+        <div className={`flex w-[84px] shrink-0 items-center justify-center ${agent ? "bg-agent text-night" : "bg-human text-night"}`}>
           <span className="display text-[20px]">{agent ? "Agent" : "You"}</span>
         </div>
         <div className="flex min-w-0 items-center gap-2 px-3.5 py-2.5">

@@ -895,6 +895,13 @@ export function autoFill(state: DraftState, input: AutoFillInput, actor: Actor):
     input.strategy === "value"
       ? autoFillValue(state, actor, input.objective)
       : autoFillStarsAndScrubs(state, actor, input.objective);
+  if (outcome.skipped.length > 0) {
+    const open = outcome.skipped.map((slot) => slotLabel(slot.slotId)).join(", ");
+    return fail(
+      "IMPOSSIBLE_SQUAD",
+      `Cannot fill the remaining ${outcome.skipped.length} slot${outcome.skipped.length === 1 ? "" : "s"} within ${formatPrice(remaining(state))}: ${open}. Remove or swap an expensive player, then try again.`,
+    );
+  }
   return { ok: true, value: outcome };
 }
 

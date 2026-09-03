@@ -130,6 +130,8 @@ export type ErrorCode =
   | "SCENARIO_FAILED"
   | "PROTECTED"
   | "NOT_IN_SQUAD"
+  | "IMPOSSIBLE_SQUAD"
+  | "INTERNAL_ERROR"
   | "INVALID_INPUT";
 
 export interface Pick {

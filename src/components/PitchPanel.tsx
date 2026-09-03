@@ -62,6 +62,12 @@ export function PitchPanel() {
         <Scoreboard />
       </div>
 
+      {!pitchReady && (
+        <p role="status" aria-live="polite" data-drop-ignore className="glass pointer-events-none absolute left-2.5 top-2.5 z-20 rounded-md px-2 py-1 text-[11px] font-medium text-fog-2 sm:left-3 sm:top-3">
+          Loading pitch…
+        </p>
+      )}
+
       {empty && calls === 0 && !selected && !dragging && (
         <div data-drop-ignore className="pointer-events-none absolute inset-x-0 top-[96px] z-20 flex justify-center px-4 sm:top-[104px] [transform:translateZ(0)]">
           <div className="glass pointer-events-auto anim-rise-in flex max-w-[min(100%,440px)] items-start gap-2 rounded-xl px-3 py-2.5">
@@ -83,7 +89,9 @@ export function PitchPanel() {
 
       {backend && backend !== "webgpu" && (
         <div data-drop-ignore className="pointer-events-none absolute bottom-2.5 right-2.5 z-20 hidden sm:bottom-3 sm:right-3 md:block [transform:translateZ(0)]">
-          <div className="glass rounded-md px-2 py-1 text-[11px] font-medium text-fog-3">{BACKEND_LABEL[backend]}</div>
+          <div role="status" className={`glass rounded-md px-2 py-1 text-[11px] font-medium ${backend === "none" ? "text-danger" : "text-fog-3"}`}>
+            {backend === "none" ? "3D unavailable · flat pitch active" : BACKEND_LABEL[backend]}
+          </div>
         </div>
       )}
 

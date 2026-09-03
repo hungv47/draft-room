@@ -366,26 +366,17 @@ describe("autoFill", () => {
     expect(summarize(outcome.state).complete).toBe(true);
   });
 
-  function expectBestEffort(state: DraftState, input: AutoFillInput) {
-    const outcome = unwrap(autoFill(state, input, "agent"));
-    const after = outcome.state;
-    expect(spent(after)).toBeLessThanOrEqual(state.budgetTotal);
-    expect(outcome.picks.length + outcome.skipped.length).toBe(after.slots.filter((s) => !state.slots.find((o) => o.id === s.id)?.playerId).length);
-    const left = remaining(after);
-    for (const skip of outcome.skipped) {
-      const slot = after.slots.find((s) => s.id === skip.slotId)!;
-      const cheapest = Math.min(...after.players.filter((p) => !p.drafted && p.position === slot.type).map((p) => p.price));
-      expect(cheapest).toBeGreaterThan(left);
-      expect(skip.reason).toMatch(/fits under/);
-    }
-    return outcome;
-  }
-
-  it("spends a short budget on as many slots as it can instead of stranding it", () => {
+  it("rejects a short budget without returning a partial squad", () => {
     for (const input of [VALUE, STARS]) {
-      const tight = expectBestEffort({ ...fresh(), budgetTotal: 20 }, input);
-      expect(tight.picks.length).toBeGreaterThanOrEqual(4);
-      expect(tight.skipped.length).toBeGreaterThan(0);
+      const tightState = { ...fresh(), budgetTotal: 20 };
+      const before = JSON.stringify(tightState);
+      const tight = autoFill(tightState, input, "agent");
+      expect(tight.ok).toBe(false);
+      if (!tight.ok) {
+        expect(tight.code).toBe("IMPOSSIBLE_SQUAD");
+        expect(tight.error).toMatch(/Cannot fill the remaining/);
+      }
+      expect(JSON.stringify(tightState)).toBe(before);
 
       let state = fresh();
       state = unwrap(autoFill({ ...state, budgetTotal: 100 }, VALUE, "agent")).state;
@@ -395,12 +386,13 @@ describe("autoFill", () => {
       };
       expect(openTwo.slots.filter((s) => !s.playerId).length).toBe(2);
       const withSix: DraftState = { ...openTwo, budgetTotal: spent(openTwo) + 6 };
-      const two = expectBestEffort(withSix, input);
-      expect(two.picks.length).toBeGreaterThanOrEqual(1);
+      const two = autoFill(withSix, input, "agent");
+      expect(two.ok).toBe(false);
+      if (!two.ok) expect(two.code).toBe("IMPOSSIBLE_SQUAD");
     }
   });
 
-  it("finishes a squad after seven expensive human picks leave little money", () => {
+  it("finishes when expensive human picks still leave a feasible budget", () => {
     let state = fresh();
     const stars = filterPlayers(state, {}).slice(0, 7);
     for (const star of stars) {
@@ -408,8 +400,10 @@ describe("autoFill", () => {
       if (result.ok) state = result.value.state;
     }
     expect(state.slots.filter((s) => !s.playerId).length).toBeGreaterThan(0);
-    const outcome = expectBestEffort(state, VALUE);
+    const outcome = unwrap(autoFill(state, VALUE, "agent"));
     expect(outcome.picks.length).toBeGreaterThanOrEqual(1);
+    expect(outcome.skipped).toEqual([]);
+    expect(summarize(outcome.state).complete).toBe(true);
   });
 
   it("refuses to run on a full squad", () => {

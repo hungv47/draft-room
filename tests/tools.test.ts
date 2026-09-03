@@ -196,6 +196,117 @@ describe("squad tools", () => {
     expect(store.getState().calls.every((c) => !c.ok)).toBe(true);
   });
 
+  it("contains unexpected handler exceptions and returns a logged failure", () => {
+    const store = createDraftStore(loadPlayers());
+    store.setState({
+      draft: () => {
+        throw new Error("forced handler failure");
+      },
+    });
+
+    let result: ReturnType<typeof executeTool> | undefined;
+    expect(() => {
+      result = executeTool(store, "draft_player", { playerId: "erling-haaland" });
+    }).not.toThrow();
+    expect(result).toMatchObject({
+      ok: false,
+      code: "INTERNAL_ERROR",
+      error: "draft_player could not complete: forced handler failure",
+    });
+    expect(store.getState().activity[0]).toMatchObject({ actor: "agent", kind: "error" });
+    expect(store.getState().calls[0]).toMatchObject({ tool: "draft_player", ok: false });
+  });
+
+  it("sanitizes tool-controlled text before it enters the activity feed", () => {
+    const store = createDraftStore(loadPlayers());
+    call(store, "apply_scenario", { scenario: { label: "<img src=x onerror=alert(1)>\u202e" } }, applied);
+    call(store, "draft_player", { playerId: "Erling Haaland" }, drafted);
+    call(store, "set_assignment", { playerId: "haaland", note: "<script>alert(1)</script>\u0000" }, assigned);
+
+    const feedText = store.getState().activity.flatMap((entry) => [entry.message, entry.detail ?? ""]).join("\n");
+    expect(feedText).not.toContain("<");
+    expect(feedText).not.toContain(">");
+    expect(feedText).not.toContain("\u0000");
+    expect(feedText).not.toContain("\u202e");
+    expect(feedText).toContain("‹script›alert(1)‹/script›");
+  });
+
+  it("returns a result object for adversarial input to every published tool", () => {
+    const store = createDraftStore(loadPlayers());
+    const adversarialInputs = {
+      list_available_players: { position: "STRIKER" },
+      get_roster_summary: {},
+      draft_player: {},
+      remove_player: { slotId: "not-a-slot" },
+      swap_player: { slotId: "not-a-slot", newPlayerId: "" },
+      auto_fill_roster: { strategy: "spend_everything" },
+      set_formation: { formation: "2-2-6" },
+      simulate_scenarios: { scenarios: [] },
+      apply_scenario: { scenario: { label: "Broken", add: [{ playerId: "missing-player" }] } },
+      project_points: { playerIds: ["missing-player"] },
+      player_outlook: { playerIds: ["missing-player"] },
+      find_upgrades: { slotId: "not-a-slot" },
+      get_brief: {},
+      set_assignment: { playerId: "missing-player" },
+    } satisfies Record<(typeof TOOL_NAMES)[number], JsonObject>;
+
+    for (const name of TOOL_NAMES) {
+      let result: ReturnType<typeof executeTool> | undefined;
+      expect(() => {
+        result = executeTool(store, name, adversarialInputs[name]);
+      }, name).not.toThrow();
+      expect(result, name).toEqual(expect.objectContaining({ ok: expect.any(Boolean) }));
+      if (result && !result.ok) {
+        expect(result.code, name).toBeTruthy();
+        expect(result.error, name).toBeTruthy();
+      }
+    }
+    expect(store.getState().calls).toHaveLength(14);
+  });
+
+  it("keeps same-turn human and agent drafts without losing either update", async () => {
+    const store = createDraftStore(loadPlayers());
+    const [human, agent] = await Promise.all([
+      Promise.resolve().then(() => store.getState().draft({ playerId: "Erling Haaland" }, "human")),
+      Promise.resolve().then(() => executeTool(store, "draft_player", { playerId: "Bukayo Saka" })),
+    ]);
+
+    expect(human.ok).toBe(true);
+    expect(agent.ok).toBe(true);
+    expect(store.getState().slots.find((slot) => slot.id === "FW1")?.playerId).toBe("erling-haaland");
+    expect(store.getState().slots.find((slot) => slot.id === "MF1")?.playerId).toBe("bukayo-saka");
+    expect(store.getState().activity.slice(0, 2).map((entry) => entry.actor).sort()).toEqual(["agent", "human"]);
+  });
+
+  it("keeps rapid tool calls distinct without duplicating activity entries", async () => {
+    const store = createDraftStore(loadPlayers());
+    const chosen = new Set<string>();
+    const picks = store.getState().slots.map((slot) => {
+      const player = store
+        .getState()
+        .players.filter((candidate) => candidate.position === slot.type && !chosen.has(candidate.id))
+        .sort((a, b) => a.price - b.price || b.projectedPoints - a.projectedPoints)[0];
+      chosen.add(player.id);
+      return { playerId: player.id, slotId: slot.id };
+    });
+
+    const draftResults = await Promise.all(picks.map((input) => Promise.resolve().then(() => executeTool(store, "draft_player", input))));
+    expect(draftResults.every((result) => result.ok)).toBe(true);
+    expect(store.getState().activity).toHaveLength(11);
+    expect(new Set(store.getState().activity.map((entry) => entry.id)).size).toBe(11);
+    expect(new Set(store.getState().activity.map((entry) => entry.message)).size).toBe(11);
+
+    const activityBeforeComparisons = store.getState().activity;
+    await Promise.all(
+      Array.from({ length: 8 }, (_, index) =>
+        Promise.resolve().then(() => executeTool(store, "simulate_scenarios", { scenarios: [{ label: `Comparison ${index + 1}` }] })),
+      ),
+    );
+    expect(store.getState().activity).toEqual(activityBeforeComparisons);
+    expect(store.getState().calls).toHaveLength(19);
+    expect(new Set(store.getState().calls.map((entry) => entry.id)).size).toBe(19);
+  });
+
   it("agent picks up a human's mid-draft squad and swaps for value", () => {
     const store = createDraftStore(loadPlayers());
     const human = store.getState().draft({ playerId: "erling-haaland" }, "human");
@@ -247,7 +358,13 @@ describe("agent-only tools", () => {
   it("simulate_scenarios compares plans without changing the squad, and apply_scenario commits atomically", () => {
     const store = createDraftStore(loadPlayers());
     store.getState().draft({ playerId: "erling-haaland" }, "human");
-    const before = JSON.stringify(store.getState().slots);
+    const before = JSON.stringify({
+      budgetTotal: store.getState().budgetTotal,
+      formation: store.getState().formation,
+      slots: store.getState().slots,
+      players: store.getState().players,
+      assignments: store.getState().assignments,
+    });
 
     const sim = call(
       store,
@@ -271,13 +388,28 @@ describe("agent-only tools", () => {
       expect(keep.projection.probabilityAtLeast).not.toBeNull();
       expect(keep.delta.projectedPoints).toBe(keep.projectedPoints - sim.current.projectedPoints);
     }
-    expect(JSON.stringify(store.getState().slots)).toBe(before);
-    expect(store.getState().formation).toBe("4-3-3");
+    expect(
+      JSON.stringify({
+        budgetTotal: store.getState().budgetTotal,
+        formation: store.getState().formation,
+        slots: store.getState().slots,
+        players: store.getState().players,
+        assignments: store.getState().assignments,
+      }),
+    ).toBe(before);
 
     const failed = call(store, "apply_scenario", { scenario: { label: "Broken", add: [{ playerId: "erling-haaland" }] } }, failure);
     expect(failed.code).toBe("SCENARIO_FAILED");
     expect(failed.error).toMatch(/rolled back at step "add erling-haaland"/);
-    expect(JSON.stringify(store.getState().slots)).toBe(before);
+    expect(
+      JSON.stringify({
+        budgetTotal: store.getState().budgetTotal,
+        formation: store.getState().formation,
+        slots: store.getState().slots,
+        players: store.getState().players,
+        assignments: store.getState().assignments,
+      }),
+    ).toBe(before);
 
     const done = call(
       store,
@@ -291,6 +423,31 @@ describe("agent-only tools", () => {
     expect(store.getState().slots.find((s) => s.id === "FW1")).toMatchObject({ playerId: "erling-haaland", filledBy: "human" });
     expect(store.getState().activity[0].kind).toBe("scenario");
     expect(store.getState().activity[0].message).toMatch(/Applied scenario "Midfield five"/);
+  });
+
+  it("fails auto-fill and simulated fills when the remaining constraints are impossible", () => {
+    const store = createDraftStore(loadPlayers());
+    store.setState({ budgetTotal: 0 });
+    const before = JSON.stringify({
+      formation: store.getState().formation,
+      slots: store.getState().slots,
+      players: store.getState().players,
+      assignments: store.getState().assignments,
+    });
+
+    const fillFailure = call(store, "auto_fill_roster", { strategy: "value", objective: "floor" }, failure);
+    expect(fillFailure.code).toBe("IMPOSSIBLE_SQUAD");
+    expect(fillFailure.error).toMatch(/cannot fill/i);
+    expect(JSON.stringify({ formation: store.getState().formation, slots: store.getState().slots, players: store.getState().players, assignments: store.getState().assignments })).toBe(before);
+
+    const simulation = call(
+      store,
+      "simulate_scenarios",
+      { scenarios: [{ label: "No budget", fill: { strategy: "value", objective: "floor" } }] },
+      simulated,
+    );
+    expect(simulation.scenarios[0]).toMatchObject({ ok: false, code: "IMPOSSIBLE_SQUAD", failedStep: "auto-fill (value, floor)" });
+    expect(JSON.stringify({ formation: store.getState().formation, slots: store.getState().slots, players: store.getState().players, assignments: store.getState().assignments })).toBe(before);
   });
 
   it("project_points models the squad or a hypothetical list", () => {

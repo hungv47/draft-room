@@ -93,6 +93,18 @@ export function PlayerPool({
   }, [players, position, fitsBudget, search, sort, budgetLeft]);
 
   const availableCount = useMemo(() => rows.filter((p) => !p.drafted).length, [rows]);
+  const actionableCount = useMemo(
+    () => rows.filter((player) => !player.drafted && player.price <= budgetLeft && firstEligibleEmptySlot(state, player.position)).length,
+    [rows, budgetLeft, state],
+  );
+  const squadFull = slots.every((slot) => slot.playerId !== null);
+  const poolNotice = squadFull
+    ? "Squad full. Remove or swap a player to make room."
+    : budgetLeft === 0
+      ? "Budget exhausted. Remove or swap a player before drafting."
+      : rows.length > 0 && actionableCount === 0
+        ? "Player pool exhausted for this view. Change filters or free an eligible slot."
+        : null;
 
   if (collapsed) {
     return (
@@ -211,6 +223,12 @@ export function PlayerPool({
         </div>
       </div>
 
+      {poolNotice && (
+        <p role="status" aria-live="polite" className="border-t border-line bg-night px-3 py-2 text-[11.5px] leading-snug text-fog-2">
+          {poolNotice}
+        </p>
+      )}
+
       <div className="scroll-fade min-h-0 flex-1 overflow-y-auto border-t border-line px-1.5 pb-2 pt-1" role="list" aria-label="Player pool">
         {rows.length === 0 && (
           <div className="flex flex-col items-center gap-2 px-3 py-10 text-center text-[13px] text-fog-2">
@@ -272,19 +290,19 @@ function PoolRow({
   const beginDrag = useBeginDrag();
 
   return (
-    <div
-      role="listitem"
-      className={`group relative flex h-14 items-center gap-2.5 rounded-md px-2 transition-colors ${
-        disabled ? "" : "cursor-grab hover:bg-white/[0.045]"
-      } ${player.drafted ? "opacity-55" : ""}`}
-      onClick={() => !disabled && onDraft()}
-      onPointerDown={(event) => {
-        if (disabled) return;
-        beginDrag(player, null, event);
-      }}
-      data-disabled={disabled || undefined}
-      data-player-id={player.id}
-    >
+    <li className="h-14">
+      <button
+        type="button"
+        disabled={disabled}
+        aria-label={disabled ? `${player.name}, unavailable${blocker ? `: ${blocker}` : ": already drafted"}` : `Draft ${player.name}`}
+        className={`group relative flex h-full w-full items-center gap-2.5 rounded-md px-2 text-left outline-none transition-colors focus-visible:bg-white/[0.07] focus-visible:ring-2 focus-visible:ring-agent focus-visible:ring-inset ${
+          disabled ? "" : "cursor-grab hover:bg-white/[0.045]"
+        } ${player.drafted ? "opacity-55" : ""}`}
+        onClick={onDraft}
+        onPointerDown={(event) => beginDrag(player, null, event)}
+        data-disabled={disabled || undefined}
+        data-player-id={player.id}
+      >
       <div className="relative flex size-10 shrink-0 items-center justify-center rounded-md" style={{ background: `linear-gradient(160deg, ${kit.primary}2b, transparent)` }}>
         <KitMini kit={kit} size={30} />
         {tier !== "standard" && (
@@ -333,21 +351,12 @@ function PoolRow({
         ) : blocker ? (
           <span className="max-w-[3.25rem] text-right text-[10.5px] leading-tight break-words text-fog-3">{blocker}</span>
         ) : (
-          <Button
-            type="button"
-            size="icon-xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDraft();
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            aria-label={`Draft ${player.name}`}
-            className="rounded-full bg-human text-white opacity-0 hover:bg-human-2 hover:text-night focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:size-8 pointer-coarse:opacity-100 [&_svg]:size-4"
-          >
+          <span aria-hidden className="inline-flex size-7 items-center justify-center rounded-full bg-human text-night opacity-0 transition-opacity group-focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:size-8 pointer-coarse:opacity-100">
             <Plus aria-hidden />
-          </Button>
+          </span>
         )}
       </div>
-    </div>
+      </button>
+    </li>
   );
 }

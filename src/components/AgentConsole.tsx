@@ -156,6 +156,7 @@ function ConsoleTab({ value, label, count, live = false }: { value: string; labe
 function ToolDirectory() {
   const [open, setOpen] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<ReadonlySet<ToolGroup>>(() => new Set());
+  const webmcp = useDraftStore((state) => state.webmcp);
   const toggleGroup = (group: ToolGroup) => {
     setCollapsed((current) => {
       const next = new Set(current);
@@ -167,6 +168,11 @@ function ToolDirectory() {
 
   return (
     <div className="px-1.5 pb-3 pt-1">
+      {webmcp.state !== "registered" && (
+        <p role="status" aria-live="polite" className={`mx-1.5 mb-1.5 rounded-md border px-2.5 py-2 text-[11.5px] leading-snug ${webmcp.state === "pending" ? "border-line text-fog-2" : "border-danger/30 bg-danger/[0.06] text-fog-2"}`}>
+          {webmcp.state === "pending" ? "Agent connecting. Tools are being registered." : "Agent unavailable. The squad still works by hand."}
+        </p>
+      )}
       {GROUP_ORDER.map((group) => {
         const tools = TOOL_DEFINITIONS.filter((tool) => tool.group === group);
         const shut = collapsed.has(group);

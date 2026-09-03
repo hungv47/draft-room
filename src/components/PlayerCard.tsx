@@ -143,7 +143,7 @@ export function PlayerCard({
         {actor && (
           <span
             className={`rounded-[5px] px-1.5 py-[3px] text-[10px] font-bold uppercase leading-none tracking-[0.1em] ${
-              actor === "agent" ? "bg-agent text-night" : "bg-human text-white"
+              actor === "agent" ? "bg-agent text-night" : "bg-human text-night"
             }`}
           >
             {ACTOR_LABEL[actor]}
@@ -165,7 +165,7 @@ export function PlayerCard({
           onPointerDown={(event) => event.stopPropagation()}
           aria-label={`Remove ${player.name}`}
           title="Remove from squad"
-          className="absolute -right-2 -top-2 z-[4] inline-flex h-7 w-7 items-center justify-center rounded-full border border-line-2 bg-night-3 text-fog-2 opacity-0 shadow-[0_6px_14px_-4px_rgb(0_0_0/0.8)] transition-[opacity,background-color,color] duration-150 hover:bg-danger hover:text-white focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
+          className="absolute -right-2 -top-2 z-[4] inline-flex h-7 w-7 items-center justify-center rounded-full border border-line-2 bg-night-3 text-fog-2 opacity-0 shadow-[0_6px_14px_-4px_rgb(0_0_0/0.8)] transition-[opacity,background-color,color] duration-150 hover:bg-danger hover:text-night focus-visible:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
         >
           <X className="h-3.5 w-3.5" aria-hidden />
         </button>

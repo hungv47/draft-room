@@ -178,28 +178,56 @@ function summaryLine(result: ToolResult): string {
 }
 
 export function executeTool(store: Store, name: string, input: JsonObject): ToolResult {
-  const started = performance.now();
+  const started = nowMs();
   let result: ToolResult;
-  if (!isToolName(name)) {
-    const error = `Unknown tool "${name}".`;
-    store.getState().recordFailure("agent", `Rejected call — ${error}`);
-    result = { ok: false, code: "UNKNOWN_TOOL", error };
-  } else {
-    result = HANDLERS[name](store, input);
+  try {
+    if (!isToolName(name)) {
+      const error = `Unknown tool "${name}".`;
+      store.getState().recordFailure("agent", `Rejected call — ${error}`);
+      result = { ok: false, code: "UNKNOWN_TOOL", error };
+    } else {
+      result = HANDLERS[name](store, input);
+    }
+  } catch (cause) {
+    const error = `${name} could not complete: ${errorMessage(cause)}`;
+    result = { ok: false, code: "INTERNAL_ERROR", error };
+    try {
+      store.getState().recordFailure("agent", `Tool failed safely — ${error}`);
+    } catch {
+      // Returning a result is more important than diagnostics if the store itself is damaged.
+    }
   }
-  store.getState().recordCall({
-    tool: name,
-    input: compactJson(input),
-    ok: result.ok,
-    summary: summaryLine(result),
-    durationMs: Math.max(0, Math.round(performance.now() - started)),
-  });
+  try {
+    store.getState().recordCall({
+      tool: name,
+      input: compactJson(input),
+      ok: result.ok,
+      summary: summaryLine(result),
+      durationMs: Math.max(0, Math.round(nowMs() - started)),
+    });
+  } catch {
+    // A broken diagnostic sink must never turn a tool result into a thrown exception.
+  }
   return result;
 }
 
 function compactJson(value: JsonObject): string {
-  const text = JSON.stringify(value);
+  let text: string;
+  try {
+    text = JSON.stringify(value) ?? "{}";
+  } catch {
+    return "[input could not be serialised]";
+  }
   return text.length > 400 ? `${text.slice(0, 397)}...` : text;
+}
+
+function nowMs(): number {
+  return typeof performance === "undefined" ? Date.now() : performance.now();
+}
+
+function errorMessage(cause: unknown): string {
+  if (cause instanceof Error && cause.message.trim()) return cause.message;
+  return "unexpected internal error";
 }
 
 const HANDLERS: Record<ToolName, (store: Store, input: JsonObject) => ToolResult> = {
