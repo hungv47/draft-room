@@ -130,6 +130,13 @@ Linting is ESLint (Next's config) plus Oxlint running the vendored
 [anti-slop](https://github.com/dmmulroy/anti-slop) rules in `tools/oxlint/anti-slop/` at error
 level. `npm run lint` runs both; vendored `src/components/ui/` is excluded.
 
+## Project records
+
+- [VISION.md](VISION.md): draft direction and questions for the owner.
+- [BRAIN.md](BRAIN.md): knowledge sources and public-repository access rules.
+- [PROGRESS.md](PROGRESS.md): current state, next action, and delivery evidence.
+- [STRUCTURE.md](STRUCTURE.md): code map, commands, and required reading.
+
 ## Licence
 
 MIT. See [LICENSE](./LICENSE). Player names are real footballers; prices, projections, and
